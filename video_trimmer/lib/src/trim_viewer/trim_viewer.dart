@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:video_trimmer/video_trimmer.dart';
 
@@ -195,30 +193,17 @@ class TrimViewer extends StatefulWidget {
 class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
   final ValueNotifier<bool?> _isScrollableAllowed = ValueNotifier(null);
 
-  StreamSubscription<TrimmerEvent>? _trimmerEvents;
-
   @override
   void initState() {
     super.initState();
-    _trimmerEvents = widget.trimmer.eventStream.listen(
-      (event) {
-        if (event == TrimmerEvent.initialized) {
-          _checkTrimmerType();
-        }
-      },
-    );
+    _checkTrimmerType();
   }
 
   @override
   void didUpdateWidget(TrimViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.trimmer != widget.trimmer) {
-      _trimmerEvents?.cancel();
-      _trimmerEvents = widget.trimmer.eventStream.listen((event) {
-        if (event == TrimmerEvent.initialized) {
-          _checkTrimmerType();
-        }
-      });
+      _checkTrimmerType();
     }
   }
 
@@ -247,12 +232,6 @@ class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
         _isScrollableAllowed.value = shouldScroll;
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _trimmerEvents?.cancel();
-    super.dispose();
   }
 
   @override
