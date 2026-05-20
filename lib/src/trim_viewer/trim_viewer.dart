@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:video_trimmer/video_trimmer.dart';
 
@@ -191,12 +193,14 @@ class TrimViewer extends StatefulWidget {
 }
 
 class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
-  bool? _isScrollableAllowed;
+  final ValueNotifier<bool?> _isScrollableAllowed = ValueNotifier(null);
+
+  StreamSubscription<TrimmerEvent>? _trimmerEvents;
 
   @override
   void initState() {
     super.initState();
-    widget.trimmer.eventStream.listen((event) {
+    _trimmerEvents = widget.trimmer.eventStream.listen((event) {
       if (event == TrimmerEvent.initialized) {
         final totalDuration =
             widget.trimmer.videoPlayerController!.value.duration;
@@ -213,9 +217,15 @@ class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
           throw 'Total video duration is less than maxVideoLength + padding. '
               'Can\'t use `ScrollableTrimViewer`. Change the type to `ViewerType.auto`.';
         }
-        setState(() => _isScrollableAllowed = shouldScroll);
+        _isScrollableAllowed.value = shouldScroll;
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _trimmerEvents?.cancel();
+    super.dispose();
   }
 
   @override
@@ -264,15 +274,18 @@ class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
         }
       },
     );
-
-    return _isScrollableAllowed == null
-        ? const SizedBox()
-        : widget.type == ViewerType.fixed
-            ? fixedTrimViewer
-            : widget.type == ViewerType.scrollable
-                ? scrollableViewer
-                : _isScrollableAllowed == true
-                    ? scrollableViewer
-                    : fixedTrimViewer;
+    return ValueListenableBuilder(
+        valueListenable: _isScrollableAllowed,
+        builder: (context, value, child) {
+          return value == null
+              ? const SizedBox()
+              : widget.type == ViewerType.fixed
+                  ? fixedTrimViewer
+                  : widget.type == ViewerType.scrollable
+                      ? scrollableViewer
+                      : value == true
+                          ? scrollableViewer
+                          : fixedTrimViewer;
+        });
   }
 }
